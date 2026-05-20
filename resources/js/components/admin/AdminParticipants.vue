@@ -360,7 +360,7 @@ const INVITATION_TEMPLATE = computed(() => ({
 
 Dans le cadre de votre participation au Congrès International de la Recherche, de l'Innovation et de la Valorisation, qui se tiendra en ligne le 22 mai 2026 à partir de 8h30, nous vous prions de bien vouloir confirmer votre présence en remplissant le formulaire disponible via le lien ci-dessous :
 
-${SITE_URL.value}
+{{APP_URL}}
 
 Dès validation de votre inscription, vous recevrez automatiquement le lien de connexion Zoom pour suivre l'événement.
 
@@ -370,9 +370,10 @@ Equipe d'organisation CIRIV.`,
 }));
 
 function openInvitation() {
-  // Select all participants
-  selected.value = participants.value.map(p => p.id);
-  // Pre-fill template
+  // Use already selected participants, or select all if none selected
+  if (selected.value.length === 0) {
+    selected.value = participants.value.map(p => p.id);
+  }
   emailForm.value = { ...INVITATION_TEMPLATE.value };
   emailResult.value = null;
   showEmailModal.value = true;

@@ -69,10 +69,11 @@ class ParticipantController extends Controller
 
         $sent   = 0;
         $failed = [];
+        $body   = str_replace('{{APP_URL}}', config('app.url'), $request->body);
         foreach ($participants as $participant) {
             try {
                 Mail::to($participant->email)->send(
-                    new ParticipantMail($request->subject, $request->body, $participant)
+                    new ParticipantMail($request->subject, $body, $participant)
                 );
                 $sent++;
             } catch (\Exception $e) {

@@ -142,14 +142,24 @@
             </div>
           </div>
 
-          <div class="flex gap-3 pt-1">
-            <button @click="closeAdd"
-              class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
-              Annuler
-            </button>
-            <button @click="submitAdd" :disabled="addLoading"
-              class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-              style="background:linear-gradient(135deg,#006B4F,#0D9E72)">
+          <div v-if="newlyAdded" class="space-y-4">
+            <div class="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+              <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
+              <span><strong>{{ newlyAdded.name || newlyAdded.email }}</strong> ajouté avec succès.</span>
+            </div>
+            <p class="text-sm text-gray-500 text-center">Voulez-vous envoyer un email d'invitation à ce participant ?</p>
+            <div class="flex gap-3">
+              <button @click="closeAdd" class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">Non, fermer</button>
+              <button @click="sendToNewly" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90" style="background:linear-gradient(135deg,#006B4F,#0D9E72)">
+                <svg class="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                Oui, envoyer invitation
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="flex gap-3 pt-1">
+            <button @click="closeAdd" class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">Annuler</button>
+            <button @click="submitAdd" :disabled="addLoading" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60" style="background:linear-gradient(135deg,#006B4F,#0D9E72)">
               {{ addLoading ? 'Ajout…' : 'Ajouter' }}
             </button>
           </div>
@@ -249,6 +259,7 @@ const addForm      = ref({ email: '', name: '', institution: '', notes: '' });
 const addLoading   = ref(false);
 const addError     = ref('');
 const isDuplicate  = ref(false);
+const newlyAdded   = ref(null);
 
 // Email modal
 const showEmailModal = ref(false);
@@ -307,6 +318,7 @@ function closeAdd() {
   addForm.value = { email: '', name: '', institution: '', notes: '' };
   addError.value = '';
   isDuplicate.value = false;
+  newlyAdded.value = null;
 }
 
 async function submitAdd() {
@@ -327,7 +339,7 @@ async function submitAdd() {
       addError.value = Object.values(data.errors || {})[0]?.[0] || 'Erreur inconnue.';
     } else {
       participants.value.unshift(data);
-      closeAdd();
+      newlyAdded.value = data;
     }
   } finally {
     addLoading.value = false;
@@ -396,6 +408,15 @@ async function submitEmail() {
 
   selected.value = [];
   emailLoading.value = false;
+}
+
+function sendToNewly() {
+  const p = newlyAdded.value;
+  closeAdd();
+  selected.value = [p.id];
+  emailForm.value = { ...INVITATION_TEMPLATE.value };
+  emailResult.value = null;
+  showEmailModal.value = true;
 }
 
 onMounted(async () => {

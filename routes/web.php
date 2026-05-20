@@ -47,7 +47,7 @@ Route::get('/preview-email', function () {
         'email' => 'redahimmi31@gmail.com',
     ]);
     $subject = 'Confirmation de votre participation — CIRIV 2026';
-    $body    = "Bonjour,\n\nDans le cadre de votre participation au Congrès International de la Recherche, de l'Innovation et de la Valorisation, qui se tiendra en ligne le 22 mai 2026 à partir de 8h30, nous vous prions de bien vouloir confirmer votre présence en remplissant le formulaire disponible via le lien ci-dessous :\n\nhttp://127.0.0.1:8000\n\nDès validation de votre inscription, vous recevrez automatiquement le lien de connexion Zoom pour suivre l'événement.\n\nCordialement,\n\nEquipe d'organisation CIRIV.";
+    $body    = "Bonjour,\n\nDans le cadre de votre participation au Congrès International de la Recherche, de l'Innovation et de la Valorisation, qui se tiendra en ligne le 22 mai 2026 à partir de 8h30, nous vous prions de bien vouloir confirmer votre présence en remplissant le formulaire disponible via le lien ci-dessous :\n\n" . config('app.url') . "\n\nDès validation de votre inscription, vous recevrez automatiquement le lien de connexion Zoom pour suivre l'événement.\n\nCordialement,\n\nEquipe d'organisation CIRIV.";
 
     return new \App\Mail\ParticipantMail($subject, $body, $participant);
 });
@@ -58,7 +58,7 @@ Route::get('/send-test-email', function () {
         'email' => 'redahimmi31@gmail.com',
     ]);
     $subject = 'Confirmation de votre participation — CIRIV 2026';
-    $body    = "Bonjour,\n\nDans le cadre de votre participation au Congrès International de la Recherche, de l'Innovation et de la Valorisation, qui se tiendra en ligne le 22 mai 2026 à partir de 8h30, nous vous prions de bien vouloir confirmer votre présence en remplissant le formulaire disponible via le lien ci-dessous :\n\nhttp://127.0.0.1:8000\n\nDès validation de votre inscription, vous recevrez automatiquement le lien de connexion Zoom pour suivre l'événement.\n\nCordialement,\n\nEquipe d'organisation CIRIV.";
+    $body    = "Bonjour,\n\nDans le cadre de votre participation au Congrès International de la Recherche, de l'Innovation et de la Valorisation, qui se tiendra en ligne le 22 mai 2026 à partir de 8h30, nous vous prions de bien vouloir confirmer votre présence en remplissant le formulaire disponible via le lien ci-dessous :\n\n" . config('app.url') . "\n\nDès validation de votre inscription, vous recevrez automatiquement le lien de connexion Zoom pour suivre l'événement.\n\nCordialement,\n\nEquipe d'organisation CIRIV.";
 
     \Illuminate\Support\Facades\Mail::to('redahimmi31@gmail.com')
         ->send(new \App\Mail\ParticipantMail($subject, $body, $participant));

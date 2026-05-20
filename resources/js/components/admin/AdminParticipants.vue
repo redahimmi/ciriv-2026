@@ -174,15 +174,31 @@
             </button>
           </div>
 
-          <!-- Success feedback -->
-          <div v-if="emailResult" class="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
-            <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
-            </svg>
-            {{ emailResult.sent }} / {{ emailResult.total }} emails envoyés avec succès.
+          <!-- Progress / Success feedback -->
+          <div v-if="emailLoading || emailResult" class="space-y-2">
+            <!-- Progress bar -->
+            <div v-if="emailResult" class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+              <div class="h-2 rounded-full transition-all duration-300"
+                :style="`width:${Math.round((emailResult.progress / emailResult.total) * 100)}%; background: linear-gradient(90deg,#006B4F,#0F8A65)`"></div>
+            </div>
+            <div class="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm"
+              :class="emailLoading ? 'bg-blue-50 border border-blue-200 text-blue-700' : emailResult.failed.length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-green-50 border border-green-200 text-green-700'">
+              <svg v-if="emailLoading" class="w-4 h-4 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              <svg v-else class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
+              </svg>
+              <span v-if="emailLoading">Envoi en cours… {{ emailResult?.sent || 0 }} / {{ emailResult?.total || selected.length }} envoyés</span>
+              <span v-else-if="emailResult">
+                ✅ {{ emailResult.sent }} envoyés
+                <template v-if="emailResult.failed.length"> — ⚠️ {{ emailResult.failed.length }} échoué(s)</template>
+              </span>
+            </div>
           </div>
 
-          <div v-else class="space-y-4">
+          <div v-if="!emailResult && !emailLoading" class="space-y-4">
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-1.5">Objet <span class="text-red-500">*</span></label>
               <input v-model="emailForm.subject" placeholder="Objet de l'email…"
@@ -195,7 +211,7 @@
             </div>
           </div>
 
-          <div v-if="!emailResult" class="flex gap-3 pt-1">
+          <div v-if="!emailResult && !emailLoading" class="flex gap-3 pt-1">
             <button @click="closeEmail"
               class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
               Annuler
@@ -352,17 +368,34 @@ function openInvitation() {
 
 async function submitEmail() {
   emailLoading.value = true;
-  try {
-    const res = await fetch('/admin/participants/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
-      body: JSON.stringify({ ids: selected.value, ...emailForm.value }),
-    });
-    emailResult.value = await res.json();
-    selected.value = [];
-  } finally {
-    emailLoading.value = false;
+  emailResult.value = null;
+
+  const CHUNK = 10;
+  const ids = [...selected.value];
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += CHUNK) chunks.push(ids.slice(i, i + CHUNK));
+
+  let totalSent = 0;
+  let totalFailed = [];
+  let progress = 0;
+
+  for (const chunk of chunks) {
+    try {
+      const res = await fetch('/admin/participants/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+        body: JSON.stringify({ ids: chunk, ...emailForm.value }),
+      });
+      const data = await res.json();
+      totalSent += data.sent || 0;
+      totalFailed = totalFailed.concat(data.failed || []);
+    } catch {}
+    progress += chunk.length;
+    emailResult.value = { sent: totalSent, failed: totalFailed, progress, total: ids.length };
   }
+
+  selected.value = [];
+  emailLoading.value = false;
 }
 
 onMounted(load);

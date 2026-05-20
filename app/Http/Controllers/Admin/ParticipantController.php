@@ -55,7 +55,7 @@ class ParticipantController extends Controller
     public function sendEmail(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'ids'     => 'required|array',
+            'ids'     => 'required|array|max:10',
             'ids.*'   => 'integer|exists:participants,id',
             'subject' => 'required|string|max:255',
             'body'    => 'required|string',
@@ -67,7 +67,8 @@ class ParticipantController extends Controller
 
         $participants = Participant::whereIn('id', $request->ids)->get();
 
-        $sent = 0;
+        $sent   = 0;
+        $failed = [];
         foreach ($participants as $participant) {
             try {
                 Mail::to($participant->email)->send(
@@ -75,10 +76,10 @@ class ParticipantController extends Controller
                 );
                 $sent++;
             } catch (\Exception $e) {
-                // continue sending to others
+                $failed[] = $participant->email;
             }
         }
 
-        return response()->json(['sent' => $sent, 'total' => $participants->count()]);
+        return response()->json(['sent' => $sent, 'failed' => $failed]);
     }
 }

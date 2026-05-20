@@ -1,0 +1,93 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../js/**/*.vue';
+
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+.font-playfair {
+    font-family: 'Poppins', sans-serif;
+    font-style: italic;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(40px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-10px); }
+}
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+.animate-fade-in-up  { animation: fadeInUp 0.7s ease-out both; }
+.animate-fade-in     { animation: fadeIn 0.5s ease-out both; }
+.animate-slide-right { animation: slideInRight 0.6s ease-out both; }
+.animate-float       { animation: float 3s ease-in-out infinite; }
+.animate-spin-slow   { animation: spin-slow 8s linear infinite; }
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-600 { animation-delay: 0.6s; }
+
+.shimmer-bg {
+    background: linear-gradient(90deg, #166534 0%, #15803d 40%, #22c55e 50%, #15803d 60%, #166534 100%);
+    background-size: 200% 100%;
+    animation: shimmer 3s infinite;
+}
+
+.glass-card {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.hero-gradient {
+    background: linear-gradient(135deg, #052e16 0%, #14532d 40%, #166534 70%, #1a6b3c 100%);
+}
+
+.card-hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.input-focus {
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-focus:focus {
+    border-color: #166534;
+    box-shadow: 0 0 0 3px rgba(22,101,52,0.12);
+    outline: none;
+}
+
+.drop-zone {
+    transition: background 0.2s, border-color 0.2s;
+}
+.drop-zone.active {
+    background: #f0fdf4;
+    border-color: #16a34a;
+}

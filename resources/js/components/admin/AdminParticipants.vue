@@ -340,28 +340,28 @@ function closeEmail() {
   emailResult.value = null;
 }
 
-const SITE_URL = window.location.origin;
+const SITE_URL = ref(window.location.origin);
 
-const INVITATION_TEMPLATE = {
+const INVITATION_TEMPLATE = computed(() => ({
   subject: 'Confirmation de votre participation — CIRIV 2026',
   body: `Bonjour,
 
 Dans le cadre de votre participation au Congrès International de la Recherche, de l'Innovation et de la Valorisation, qui se tiendra en ligne le 22 mai 2026 à partir de 8h30, nous vous prions de bien vouloir confirmer votre présence en remplissant le formulaire disponible via le lien ci-dessous :
 
-${SITE_URL}
+${SITE_URL.value}
 
 Dès validation de votre inscription, vous recevrez automatiquement le lien de connexion Zoom pour suivre l'événement.
 
 Cordialement,
 
 Equipe d'organisation CIRIV.`,
-};
+}));
 
 function openInvitation() {
   // Select all participants
   selected.value = participants.value.map(p => p.id);
   // Pre-fill template
-  emailForm.value = { ...INVITATION_TEMPLATE };
+  emailForm.value = { ...INVITATION_TEMPLATE.value };
   emailResult.value = null;
   showEmailModal.value = true;
 }
@@ -398,5 +398,10 @@ async function submitEmail() {
   emailLoading.value = false;
 }
 
-onMounted(load);
+onMounted(async () => {
+  load();
+  const res = await fetch('/api/form-status');
+  const data = await res.json();
+  if (data.app_url) SITE_URL.value = data.app_url;
+});
 </script>

@@ -11,6 +11,7 @@ class FormStatusController extends Controller
     {
         return response()->json([
             'form_status' => Setting::get('form_status', 'open'),
+            'app_url'     => config('app.url'),
         ]);
     }
 }

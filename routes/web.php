@@ -34,6 +34,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/participants',                 [ParticipantController::class, 'store']);
         Route::delete('/participants/{participant}', [ParticipantController::class, 'destroy']);
         Route::post('/participants/send-email',      [ParticipantController::class, 'sendEmail']);
+        Route::post('/participants/upload-program',   [ParticipantController::class, 'uploadProgram']);
+        Route::post('/participants/send-program',     [ParticipantController::class, 'sendProgram']);
+        Route::post('/participants/upload-presentation', [ParticipantController::class, 'uploadPresentation']);
     });
 
     // File download — auth only, no JSON check (streams binary file)

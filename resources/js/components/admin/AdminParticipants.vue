@@ -30,6 +30,15 @@
         </svg>
         Envoyer invitation
       </button>
+      <!-- Send program (live) button -->
+      <button v-if="selected.length" @click="openProgram"
+        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
+        style="background:linear-gradient(135deg,#ef4444,#f97316)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4zM4 6h8v12H4z"/>
+        </svg>
+        Envoyer programme live
+      </button>
       <button v-if="selected.length" @click="showEmailModal = true"
         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
         style="background:linear-gradient(135deg,#1d4ed8,#3b82f6)">
@@ -167,6 +176,81 @@
       </div>
     </Teleport>
 
+    <!-- ── SEND PROGRAM MODAL ── -->
+    <Teleport to="body">
+      <div v-if="showProgramModal" class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style="background:rgba(0,0,0,0.35);backdrop-filter:blur(4px)">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-7 space-y-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-gray-900 text-lg">Envoyer programme live</h2>
+              <p class="text-sm text-gray-500 mt-0.5">À {{ selected.length }} participant(s) sélectionné(s)</p>
+            </div>
+            <button @click="closeProgram" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <div v-if="programLoading || programResult" class="space-y-2">
+            <div v-if="programResult" class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+              <div class="h-2 rounded-full" :style="`width:${Math.round((programResult.progress / programResult.total) * 100)}%; background: linear-gradient(90deg,#ef4444,#f97316)`"></div>
+            </div>
+            <div class="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm"
+              :class="programLoading ? 'bg-blue-50 border border-blue-200 text-blue-700' : programResult && programResult.failed.length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-green-50 border border-green-200 text-green-700'">
+              <svg v-if="programLoading" class="w-4 h-4 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              <svg v-else class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
+              </svg>
+              <span v-if="programLoading">Envoi en cours… {{ programResult?.sent || 0 }} / {{ programResult?.total || selected.length }} envoyés</span>
+              <span v-else-if="programResult">
+                ✅ {{ programResult.sent }} envoyés
+                <template v-if="programResult.failed.length"> — ⚠️ {{ programResult.failed.length }} échoué(s)</template>
+              </span>
+            </div>
+          </div>
+
+          <div v-if="!programResult && !programLoading" class="space-y-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Objet <span class="text-red-500">*</span></label>
+              <input v-model="programForm.subject" placeholder="Objet de l'email…"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Message <span class="text-red-500">*</span></label>
+              <textarea v-model="programForm.body" rows="6" placeholder="Rédigez votre message ici…"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 resize-none"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Fichier programme (image/pdf/zip) <span class="text-gray-400">(optionnel)</span></label>
+              <input type="file" @change="handleProgramFileChange"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400" />
+              <p v-if="programUploading" class="text-xs text-gray-500 mt-2">Téléversement…</p>
+              <p v-else-if="programForm.program_path" class="text-xs text-gray-600 mt-2">Fichier téléversé: {{ programForm.program_path }}</p>
+              <p v-else-if="programUploadError" class="text-xs text-red-500 mt-2">{{ programUploadError }}</p>
+            </div>
+          </div>
+
+          <div v-if="!programResult && !programLoading" class="flex gap-3 pt-1">
+            <button @click="closeProgram"
+              class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">Annuler</button>
+            <button @click="submitProgram" :disabled="programLoading || !programForm.subject || !programForm.body"
+              class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+              style="background:linear-gradient(135deg,#ef4444,#f97316)">
+              {{ programLoading ? 'Envoi…' : 'Envoyer le programme' }}
+            </button>
+          </div>
+          <div v-else class="flex gap-3 pt-1">
+            <button @click="closeProgram" class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">Fermer</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- ── SEND EMAIL MODAL ── -->
     <Teleport to="body">
       <div v-if="showEmailModal" class="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -219,6 +303,14 @@
               <textarea v-model="emailForm.body" rows="7" placeholder="Rédigez votre message ici…"
                 class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 resize-none"></textarea>
             </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Fichier slider (optionnel)</label>
+              <input type="file" @change="handleFileChange"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400" />
+              <p v-if="uploading" class="text-xs text-gray-500 mt-2">Téléversement…</p>
+              <p v-else-if="emailForm.presentation_path" class="text-xs text-gray-600 mt-2">Fichier téléversé: {{ emailForm.presentation_path }}</p>
+              <p v-else-if="uploadError" class="text-xs text-red-500 mt-2">{{ uploadError }}</p>
+            </div>
           </div>
 
           <div v-if="!emailResult && !emailLoading" class="flex gap-3 pt-1">
@@ -266,6 +358,8 @@ const showEmailModal = ref(false);
 const emailForm      = ref({ subject: '', body: '' });
 const emailLoading   = ref(false);
 const emailResult    = ref(null);
+const uploading      = ref(false);
+const uploadError    = ref('');
 
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content;
 
@@ -379,6 +473,97 @@ function openInvitation() {
   showEmailModal.value = true;
 }
 
+// Program modal
+const showProgramModal = ref(false);
+const programForm = ref({ subject: '', body: '', program_path: '' });
+const programLoading = ref(false);
+const programResult = ref(null);
+const programUploading = ref(false);
+const programUploadError = ref('');
+
+function openProgram() {
+  if (selected.value.length === 0) {
+    selected.value = participants.value.map(p => p.id);
+  }
+  // Prefill a sensible template
+  programForm.value = {
+    subject: 'Programme live — CIRIV 2026',
+    body: `Bonjour,\n\nVeuillez trouver ci-joint le programme de la session live.\n\nCordialement,\nEquipe d'organisation CIRIV.`,
+    program_path: ''
+  };
+  programResult.value = null;
+  showProgramModal.value = true;
+}
+
+function closeProgram() {
+  showProgramModal.value = false;
+  programForm.value = { subject: '', body: '', program_path: '' };
+  programResult.value = null;
+  programUploadError.value = '';
+}
+
+async function handleProgramFileChange(e) {
+  programUploadError.value = '';
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (file.size > 50 * 1024 * 1024) {
+    programUploadError.value = 'Fichier trop volumineux (max 50 MB).';
+    return;
+  }
+  const form = new FormData();
+  form.append('file', file);
+  programUploading.value = true;
+  try {
+    const res = await fetch('/admin/participants/upload-program', {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      programUploadError.value = Object.values(data.errors || {})[0]?.[0] || 'Erreur de téléversement.';
+    } else {
+      programForm.value.program_path = data.path;
+    }
+  } catch (err) {
+    programUploadError.value = 'Erreur réseau.';
+  } finally {
+    programUploading.value = false;
+  }
+}
+
+async function submitProgram() {
+  programLoading.value = true;
+  programResult.value = null;
+
+  const CHUNK = 50;
+  const ids = [...selected.value];
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += CHUNK) chunks.push(ids.slice(i, i + CHUNK));
+
+  let totalSent = 0;
+  let totalFailed = [];
+  let progress = 0;
+
+  for (const chunk of chunks) {
+    try {
+      const res = await fetch('/admin/participants/send-program', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+        body: JSON.stringify({ ids: chunk, subject: programForm.value.subject, body: programForm.value.body, program_path: programForm.value.program_path }),
+      });
+      const data = await res.json();
+      totalSent += data.sent || 0;
+      totalFailed = totalFailed.concat(data.failed || []);
+    } catch {}
+    progress += chunk.length;
+    programResult.value = { sent: totalSent, failed: totalFailed, progress, total: ids.length };
+  }
+
+  selected.value = [];
+  programLoading.value = false;
+}
+
 async function submitEmail() {
   emailLoading.value = true;
   emailResult.value = null;
@@ -409,6 +594,37 @@ async function submitEmail() {
 
   selected.value = [];
   emailLoading.value = false;
+}
+
+async function handleFileChange(e) {
+  uploadError.value = '';
+  const file = e.target.files?.[0];
+  if (!file) return;
+  // Accept any file type. Enforce a client-side max size (50MB) to avoid large uploads.
+  if (file.size > 50 * 1024 * 1024) {
+    uploadError.value = 'Fichier trop volumineux (max 50 MB).';
+    return;
+  }
+  const form = new FormData();
+  form.append('file', file);
+  uploading.value = true;
+  try {
+    const res = await fetch('/admin/participants/upload-presentation', {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      uploadError.value = Object.values(data.errors || {})[0]?.[0] || 'Erreur de téléversement.';
+    } else {
+      emailForm.value.presentation_path = data.path;
+    }
+  } catch (err) {
+    uploadError.value = 'Erreur réseau.';
+  } finally {
+    uploading.value = false;
+  }
 }
 
 function sendToNewly() {

@@ -60,6 +60,13 @@
       @endphp
       {!! $output !!}
 
+      @if(!empty($presentation_url))
+        <div class="btn-wrap">
+          <a href="{{ $presentation_url }}" class="btn" target="_blank" rel="noopener">{{ $file_button_text ?? 'Télécharger le slider →' }}</a>
+        </div>
+        <p class="content"><strong>Pièce jointe :</strong> Le fichier est disponible via le bouton ci-dessus.</p>
+      @endif
+
       <hr class="divider"/>
       <p class="note">Ce message vous a été envoyé en tant que participant(e) inscrit(e) au congrès CIRIV 2026.</p>
     </div>
